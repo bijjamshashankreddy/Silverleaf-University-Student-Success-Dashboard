@@ -128,11 +128,11 @@ div[data-baseweb="select"] > div[role="listbox"] {
 # -----------------------------------------------------------
 @st.cache_data
 def load_data():
-    profile = pd.read_csv(r"C:\ASSIGNMENTS\MRP Invincible\data\student_profile.csv")
-    perf = pd.read_csv(r"C:\ASSIGNMENTS\MRP Invincible\data\student_performance.csv")
-    enroll = pd.read_csv(r"C:\ASSIGNMENTS\MRP Invincible\data\course_enrollment.csv")
-    engage = pd.read_csv(r"C:\ASSIGNMENTS\MRP Invincible\data\engagement_log.csv")
-    insights = pd.read_csv(r"C:\ASSIGNMENTS\MRP Invincible\data\ai_insights.csv")
+    profile = pd.read_csv(r"student_profile.csv")
+    perf = pd.read_csv(r"student_performance.csv")
+    enroll = pd.read_csv(r"course_enrollment.csv")
+    engage = pd.read_csv(r"engagement_log.csv")
+    insights = pd.read_csv(r"ai_insights.csv")
 
     for df in [profile, perf, enroll, engage, insights]:
         if "Student_ID" in df.columns:
@@ -157,7 +157,7 @@ def load_data():
 
 profile_df, perf_df, enroll_df, enroll_prog_df, engage_df, insights_df, master_df = load_data()
 
-model_path = Path("risk_model.pkl")
+model_path = Path("student_success_model.pkl")
 risk_model = joblib.load(model_path) if model_path.exists() else None
 
 # -----------------------------------------------------------
@@ -844,4 +844,5 @@ def show_dashboard():
 if st.session_state["page"] == "home":
     show_home()
 else:
+
     show_dashboard()
