@@ -1,0 +1,12 @@
+streamlit
+pandas
+numpy
+scikit-learn
+plotly
+joblib
+python-dateutil
+path
+matplotlib
+seaborn
+pydantic
+altair
