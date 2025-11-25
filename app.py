@@ -6,34 +6,50 @@ import joblib
 from pathlib import Path
 
 # -----------------------------------------------------------
-# PAGE CONFIG + BASIC STYLING
+# PAGE CONFIG
 # -----------------------------------------------------------
 st.set_page_config(
     page_title="Student Success Dashboard – Silverleaf University",
     layout="wide",
+    page_icon="🎓"
 )
 
-st.markdown("""
+# -----------------------------------------------------------
+# GLOBAL STYLE (CSS)
+# -----------------------------------------------------------
+st.markdown(
+    """
 <style>
-
-/* GENERAL */
-body, .stApp {
-    font-family: 'Inter', sans-serif;
+/* BASE APP */
+html, body, .stApp {
+    font-family: "Inter", system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
     background-color: #f5f7fb;
+}
+
+/* TITLES */
+h1, h2, h3, h4, h5 {
+    color: #14213d;
 }
 
 /* KPI CARDS */
 .metric-card {
     padding: 16px;
-    border-radius: 12px;
+    border-radius: 14px;
     text-align: center;
-    color: white;
+    color: #ffffff;
     font-weight: 600;
-    box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+    box-shadow: 0 4px 14px rgba(15, 23, 42, 0.18);
+    transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+.metric-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(15, 23, 42, 0.22);
 }
 .metric-label {
     font-size: 12px;
     opacity: 0.9;
+    letter-spacing: 0.03em;
+    text-transform: uppercase;
 }
 .metric-value {
     font-size: 22px;
@@ -42,122 +58,175 @@ body, .stApp {
 
 /* INSIGHT CARDS */
 .insight-card {
-    border-radius: 8px;
-    padding: 12px;
+    border-radius: 10px;
+    padding: 12px 12px 10px 12px;
     margin-bottom: 10px;
     background: #ffffff;
-    box-shadow: 0 2px 5px rgba(0,0,0,0.07);
+    box-shadow: 0 2px 8px rgba(15, 23, 42, 0.12);
     border-left-width: 5px;
     border-left-style: solid;
+    animation: fadeIn 0.25s ease-in-out;
 }
-.insight-card.yellow { border-left-color: #ffb400; }
-.insight-card.blue   { border-left-color: #2196f3; }
+.insight-card.green { border-left-color: #16a34a; }
+.insight-card.yellow { border-left-color: #f59e0b; }
+.insight-card.blue   { border-left-color: #2563eb; }
+.insight-card.gray   { border-left-color: #6b7280; }
 .insight-title { font-weight: 600; font-size: 12px; margin-bottom: 3px; }
 .insight-body  { font-size: 12px; }
 
-/* ACADEMIC ENGAGEMENT METRICS – CLEAN + PRO */
-.metric-wrapper {
-    width: 100%;
-    display: block !important;
+/* PANEL HEADER */
+.panel-header {
+    font-weight: 600;
+    font-size: 13px;
+    margin-bottom: 6px;
+    color: #111827;
 }
 
+/* ACADEMIC ENGAGEMENT METRICS */
 .metric-box {
     background: #ffffff;
-    border-radius: 12px;
-    padding: 20px;
+    border-radius: 14px;
+    padding: 16px 18px;
     width: 100% !important;
     display: block !important;
-    box-shadow: 0 3px 10px rgba(0,0,0,0.08);
-    margin-top: 10px;
-    position: relative;
+    box-shadow: 0 4px 14px rgba(15, 23, 42, 0.1);
+    margin-top: 8px;
 }
-
 .metric-row {
     width: 100%;
     display: flex;
     justify-content: space-between;
     align-items: center;
-    padding: 8px 0;
-    border-bottom: 1px solid #f0f0f0;
+    padding: 6px 0;
+    border-bottom: 1px solid #f1f5f9;
 }
-
 .metric-row:last-child {
     border-bottom: none;
 }
-
 .metric-row label {
-    font-weight: 600;
-    color: #222;
+    font-weight: 500;
+    color: #111827;
+    font-size: 13px;
 }
-
 .metric-row span {
     font-weight: 600;
-    color: #1b4ed8;
+    color: #1d4ed8;
+    font-size: 13px;
 }
 
-/* SCROLLBAR FOR DROPDOWN */
+/* DROPDOWN SCROLLER */
 div[data-baseweb="select"] > div[role="listbox"] {
     max-height: 220px;
     overflow-y: auto;
 }
 
-/* FOOTER NOTES */
+/* ANALYZE BUTTON CARD */
+.analyze-card {
+    background: linear-gradient(135deg, #1d4ed8 0%, #06b6d4 100%);
+    color: #e5e7eb;
+    border-radius: 14px;
+    padding: 14px 16px;
+    box-shadow: 0 5px 18px rgba(37, 99, 235, 0.35);
+}
+
+/* FOOTER */
 .footer-container {
     width: 100%;
     text-align: center;
-    padding: 25px 0 15px 0;
+    padding: 30px 0 18px 0;
     margin-top: 40px;
-    color: #666;
+    color: #6b7280;
     font-size: 13px;
 }
-
 .footer-note {
     font-weight: 500;
 }
-
 .footer-copy {
     font-size: 12px;
-    opacity: 0.8;
+    opacity: 0.9;
+}
+
+/* SIMPLE FADE ANIMATION */
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(4px); }
+    to   { opacity: 1; transform: translateY(0); }
 }
 </style>
-""", unsafe_allow_html=True)
-
+""",
+    unsafe_allow_html=True,
+)
 
 # -----------------------------------------------------------
-# DATA LOADING
+# CONSTANTS
+# -----------------------------------------------------------
+PROGRAM_COURSE_MAP = {
+    "Business Analytics": [
+        "AI Basics",
+        "Statistics",
+        "Programming",
+        "Communication Skills",
+        "Predictive Modeling",
+    ],
+    "Data Science": [
+        "Python Programming",
+        "Machine Learning",
+        "Data Wrangling",
+        "Deep Learning",
+        "Visualization",
+    ],
+    "Computer Science": [
+        "Algorithms",
+        "Operating Systems",
+        "Networks",
+        "Java Programming",
+        "Databases",
+        "Advanced Networking",
+    ],
+    "Engineering": [
+        "Physics",
+        "Calculus",
+        "Materials Science",
+        "CAD",
+        "Signals",
+    ],
+}
+
+# -----------------------------------------------------------
+# LOAD DATA
 # -----------------------------------------------------------
 @st.cache_data
 def load_data():
+    """
+    Load all CSVs and build a master table.
+    Adjust the paths if needed.
+    """
+    base = Path("C:/ASSIGNMENTS/MRP Invincible/data")  # adjust if you move the project
+
     profile = pd.read_csv(r"student_profile.csv")
     perf = pd.read_csv(r"student_performance.csv")
     enroll = pd.read_csv(r"course_enrollment.csv")
     engage = pd.read_csv(r"engagement_log.csv")
     insights = pd.read_csv(r"ai_insights.csv")
 
+    # Normalize Student_ID type
     for df in [profile, perf, enroll, engage, insights]:
         if "Student_ID" in df.columns:
             df["Student_ID"] = df["Student_ID"].astype(str)
 
+    # Build master table (student + performance + ai metadata)
     master = (
-        profile
-        .merge(perf, on="Student_ID", how="inner")
+        profile.merge(perf, on="Student_ID", how="inner")
         .merge(insights[["Student_ID", "Risk_Level", "Message", "Semester"]],
                on="Student_ID", how="left")
     )
 
-    # attach Program to enrollment so we know courses by program
-    enroll_prog = enroll.merge(
-        profile[["Student_ID", "Program"]],
-        on="Student_ID",
-        how="left"
-    )
-
-    return profile, perf, enroll, enroll_prog, engage, insights, master
+    return profile, perf, enroll, engage, insights, master
 
 
-profile_df, perf_df, enroll_df, enroll_prog_df, engage_df, insights_df, master_df = load_data()
+profile_df, perf_df, enroll_df, engage_df, insights_df, master_df = load_data()
 
-model_path = Path("student_success_model.pkl")
+# Try to load trained risk model (optional)
+model_path = Path("risk_model.pkl")
 risk_model = joblib.load(model_path) if model_path.exists() else None
 
 # -----------------------------------------------------------
@@ -166,94 +235,93 @@ risk_model = joblib.load(model_path) if model_path.exists() else None
 if "page" not in st.session_state:
     st.session_state["page"] = "home"
 
-# these will be set on home page
-defaults = {
-    "selected_student_id": None,
-    "selected_student_name": None,
-    "selected_program": None,
-    "selected_year": None,
-    "selected_semester": None,
-    "latest_grades": {},
-    "survey_study_hours": None,
-    "survey_motivation": None,
-    "survey_attendance": None,
+default_state = {
+    "student_id": None,
+    "student_name": None,
+    "program": None,
+    "year": None,
+    "semester": None,
+    "course_grades": {},
+    "study_hours": 10,
+    "attendance": 80,
+    "motivation": 6,
 }
-for k, v in defaults.items():
+for k, v in default_state.items():
     st.session_state.setdefault(k, v)
 
 # -----------------------------------------------------------
 # HELPER FUNCTIONS
 # -----------------------------------------------------------
-def get_courses_for_program(program, max_courses=4):
-    df = enroll_prog_df[enroll_prog_df["Program"] == program]
-    if df.empty:
-        # fallback: most common courses overall
-        return (
-            enroll_df["Course_Name"]
-            .value_counts()
-            .index
-            .tolist()[:max_courses]
-        )
-    return (
-        df["Course_Name"]
-        .value_counts()
-        .index
-        .tolist()[:max_courses]
-    )
-
-
-def compute_kpis(student_row_adj):
-    if student_row_adj is None or student_row_adj.empty:
-        return 0, 0, 0, 0.0
-    att = float(student_row_adj.get("Attendance", 0))
-    exam = float(student_row_adj.get("ExamScore", 0))
-    hours = float(student_row_adj.get("StudyHours", 0))
-    mot = float(student_row_adj.get("Motivation", 0))
+def compute_kpis(row):
+    """Return Attendance, ExamScore, StudyHours, Motivation safely."""
+    if row is None or row.empty:
+        return 0, 0, 0, 0
+    r = row.iloc[0]
+    att = float(r.get("Attendance", 0))
+    exam = float(r.get("ExamScore", 0))
+    hours = float(r.get("StudyHours", 0))
+    mot = float(r.get("Motivation", 0))
     return round(att, 1), round(exam, 1), round(hours, 1), round(mot, 1)
 
 
-def get_weekly_trend_clean(student_row_adj, cohort_df, override_hours):
-    if student_row_adj.empty:
+def build_weekly_hours_trend(student_row, cohort_df, current_hours):
+    """
+    Simulate a weekly trend of study hours for the student vs cohort.
+    The trend responds to the Study Hours slider.
+    """
+    if student_row.empty:
         return pd.DataFrame()
-
-    s = student_row_adj.iloc[0]
-
-    # Student values
-    student_hours = override_hours
-    student_exam = float(s["ExamScore"])
-
-    # Cohort values
-    cohort_hours = cohort_df["StudyHours"].mean()
-    cohort_exam = cohort_df["ExamScore"].mean()
 
     weeks = ["Week 2", "Week 4", "Week 8", "Week 14"]
 
-    df = pd.DataFrame({
-        "Week": weeks,
-        "Student Exam Score": [student_exam * r for r in [0.75, 0.85, 0.95, 1.0]],
-        "Cohort Exam Score":  [cohort_exam * r  for r in [0.75, 0.85, 0.95, 1.0]]
-    })
+    # Student hours: ramp up to current slider value
+    student_vals = [
+        current_hours * 0.4,
+        current_hours * 0.7,
+        current_hours * 0.9,
+        current_hours,
+    ]
 
+    # Cohort hours based on average
+    cohort_hours = float(cohort_df["StudyHours"].mean()) if "StudyHours" in cohort_df.columns else 8.0
+    cohort_vals = [
+        cohort_hours * 0.4,
+        cohort_hours * 0.7,
+        cohort_hours * 0.9,
+        cohort_hours,
+    ]
+
+    df = pd.DataFrame(
+        {
+            "Week": weeks,
+            "Student Study Hours": student_vals,
+            "Cohort Study Hours": cohort_vals,
+        }
+    )
     return df
 
 
-def get_resource_distribution(student_row_adj):
-    if student_row_adj is None or student_row_adj.empty:
+def build_resource_distribution(student_row, study_hours):
+    """Estimate how the student splits study time across resources."""
+    if student_row.empty:
         return pd.DataFrame()
 
-    r = student_row_adj.iloc[0]
-    avg_study = float(r.get("StudyHours", 0))
-    online = float(r.get("EduTech", 0))
-    tutoring = float(r.get("Extracurricular", 0))
-    in_person = max(avg_study - online, 0)
+    r = student_row.iloc[0]
+    online = float(r.get("EduTech", 0))  # usage of edutech tools
+    tutoring = float(r.get("Extracurricular", 0))  # extra sessions / peer support
+    # assign remaining time as in-person classes / self-study
+    in_person = max(study_hours - online - tutoring, 0)
 
-    return pd.DataFrame({
-        "Resource": ["Online Learning", "In-Person Classes", "Tutoring Sessions"],
-        "Hours": [online, in_person, tutoring],
-    })
+    return pd.DataFrame(
+        {
+            "Resource": ["Online Learning", "In-Person Classes", "Tutoring Sessions"],
+            "Hours": [online, in_person, tutoring],
+        }
+    )
 
 
-def get_engagement_metrics(perf_df, student_id):
+def build_engagement_metrics(student_id):
+    """Create friendly engagement metrics for the right-hand card."""
     row = perf_df[perf_df["Student_ID"] == student_id]
     if row.empty:
         row = perf_df.sample(1, random_state=0)
@@ -261,8 +329,8 @@ def get_engagement_metrics(perf_df, student_id):
 
     ai_tutor = int(round(r.get("OnlineCourses", 0) / 2))
     study_group = int(round(r.get("Extracurricular", 0)))
-    logins = int(round(r.get("Resources", 0) * 5))
-    downloads = int(round(r.get("EduTech", 0) * 10))
+    logins = int(round(r.get("Resources", 0) * 4))
+    downloads = int(round(r.get("EduTech", 0) * 8))
     assign_comp = float(r.get("AssignmentCompletion", 0))
     stress_val = float(r.get("StressLevel", 0))
     forum_posts = int(round(r.get("Discussions", 0)))
@@ -274,7 +342,7 @@ def get_engagement_metrics(perf_df, student_id):
     else:
         stress_label = "Low"
 
-    if assign_comp >= 70 and stress_val <= 6:
+    if assign_comp >= 75 and stress_val <= 6:
         status = "On Track"
     elif assign_comp >= 50:
         status = "Needs Attention"
@@ -282,158 +350,305 @@ def get_engagement_metrics(perf_df, student_id):
         status = "At Risk"
 
     return {
-        "AI_Tutor_Sessions": ai_tutor,
-        "Study_Group_Sessions": study_group,
-        "Dashboard_Logins": logins,
-        "Resource_Downloads": downloads,
-        "Assignment_Completion": round(assign_comp, 1),
-        "Stress_Level_Label": stress_label,
-        "Forum_Posts": forum_posts,
-        "Overall_Status": status,
+        "AI Tutor Sessions": ai_tutor,
+        "Study Group Sessions": study_group,
+        "Dashboard Logins": logins,
+        "Resource Downloads": downloads,
+        "Assignment Completion": f"{assign_comp:.1f}%",
+        "Stress Level": stress_label,
+        "Forum Participation": f"{forum_posts} posts",
+        "Overall Progress": status,
     }
 
+def rule_based_risk(student_row):
+    """Improved rule-based risk using actual signals from updated student data."""
+    if student_row.empty:
+        return "Unknown"
 
-def local_ai_agent(student_row_adj, risk_level):
-    if student_row_adj is None or student_row_adj.empty:
-        return ("No data available.",
-                "We could not find your record.",
-                "Please check with the program office.",
-                "We could not compute an overall summary.")
+    r = student_row.iloc[0]
 
-    r = student_row_adj.iloc[0]
+    attendance = float(r.get("Attendance", 0))
+    exam = float(r.get("ExamScore", 0))
+    assignment = float(r.get("AssignmentCompletion", 0))
+    stress = float(r.get("StressLevel", 0))
+
+    # HIGH RISK
+    if attendance < 60 or exam < 50 or assignment < 50 or stress >= 8:
+        return "High"
+
+    # MEDIUM RISK
+    if attendance < 75 or exam < 65 or assignment < 65 or stress >= 6:
+        return "Medium"
+
+    # LOW RISK
+    return "Low"
+
+def predict_risk(student_row):
+    """Hybrid risk engine combining rule-based checks with ML predictions."""
+    if student_row.empty:
+        return "Unknown"
+
+    # STEP 1 — Always start with rule-based risk
+    rule_risk = rule_based_risk(student_row)
+
+    # LOW cannot be overridden (protects from ML inaccuracies)
+    if rule_risk == "Low":
+        return "Low"
+
+    # If no ML model exists, use rule-based
+    if risk_model is None:
+        return rule_risk
+
+    # Select valid model features
+    candidate_cols = [
+        "StudyHours", "Attendance", "Resources", "Extracurricular",
+        "Motivation", "Internet", "Gender", "Age", "LearningStyle",
+        "OnlineCourses", "Discussions", "AssignmentCompletion",
+        "ExamScore", "EduTech", "StressLevel", "FinalGrade"
+    ]
+    cols = [c for c in candidate_cols if c in student_row.columns]
+
+    if not cols:
+        return rule_risk
+
+    X = student_row[cols].astype(float)
+
+    # STEP 2 — ML prediction
+    try:
+        ml_pred = risk_model.predict(X)[0]
+    except:
+        return rule_risk
+
+    # STEP 3 — hybrid arbitration
+    # If rule = Medium but ML = High → Medium (avoid ML over-harshness)
+    if rule_risk == "Medium" and ml_pred == "High":
+        return "Medium"
+
+    return ml_pred
+
+
+def local_ai_agent(student_row, risk_level):
+    """
+    Generate plain-language messages based on local data only.
+    No external AI calls.
+    """
+    if student_row.empty:
+        msg = "We could not find your record in the system. Please contact your program office."
+        return msg, msg, msg, msg
+
+    r = student_row.iloc[0]
     att = float(r.get("Attendance", 0))
     study = float(r.get("StudyHours", 0))
     stress = float(r.get("StressLevel", 0))
     exams = float(r.get("ExamScore", 0))
     assign_comp = float(r.get("AssignmentCompletion", 0))
 
-    if exams >= 75 and assign_comp >= 80:
-        positive = "You are doing very well academically. Your exam scores and assignment completion look strong."
-    elif exams >= 60:
-        positive = "You are keeping up with the material. There is a good base to build on."
+    # Positive note
+    if exams >= 80 and assign_comp >= 85:
+        positive = "You are doing very well. Your exam scores and assignment completion are strong."
+    elif exams >= 65:
+        positive = "You are keeping up with most of the material. There is a good foundation to build on."
     else:
-        positive = "You’ve made a start, and checking this dashboard is a good step forward."
+        positive = "You have made a start. Checking this dashboard is a good step toward improving your progress."
 
-    improv_parts = []
+    # Improvement focus
+    improvements = []
     if att < 70:
-        improv_parts.append("Try to increase your class attendance.")
+        improvements.append("Try to raise your attendance closer to at least 80%.")
     if study < 10:
-        improv_parts.append("Aim for at least 10–12 focused study hours per week.")
+        improvements.append("Aim for at least 10–12 focused study hours per week.")
     if assign_comp < 70:
-        improv_parts.append("Make sure you submit assignments on time.")
-    improv = " ".join(improv_parts) if improv_parts else \
-        "Keep refining your study routine and continue doing what already works."
+        improvements.append("Try to submit all assignments on time and avoid missing deadlines.")
 
-    if stress >= 7:
-        tip = "Your stress level looks high. Try short breaks, regular sleep, and reach out to your advisor if it feels overwhelming."
-    elif stress >= 4:
-        tip = "Your stress is moderate. Balance study time with rest and short walks between sessions."
+    if improvements:
+        improvement_msg = " ".join(improvements)
     else:
-        tip = "Your stress level looks manageable. Keep your current habits and protect your downtime."
+        improvement_msg = "Your current learning habits look stable. Keep refining what already works for you."
 
+    # Stress tip
+    if stress >= 8:
+        tip = "Your stress level looks high. Please consider talking with an advisor and taking regular breaks."
+    elif stress >= 5:
+        tip = "Your stress is moderate. Balance deep study sessions with short walks, breaks, and enough sleep."
+    else:
+        tip = "Your stress level appears manageable. Keep protecting your downtime and healthy routines."
+
+    # Summary
     summary = (
-        f"Based on your current data, your risk level is **{risk_level}**. "
-        f"Attendance: **{att:.0f}%**, weekly study hours: **{study:.1f}**, "
-        f"exam score: **{exams:.0f}**, and assignment completion: **{assign_comp:.0f}%**."
+        f"Right now your risk level is **{risk_level}**. "
+        f"Attendance is **{att:.0f}%**, weekly study hours are about **{study:.1f}**, "
+        f"your main exam score is **{exams:.0f}**, and assignment completion is around **{assign_comp:.0f}%**. "
+        "These metrics drive the insights shown on your dashboard."
     )
 
-    return positive, improv, tip, summary
-
-
-def predict_risk(student_row_adj):
-    if student_row_adj is None or student_row_adj.empty:
-        return "Unknown"
-    if risk_model is None:
-        if "Risk_Level" in student_row_adj.columns:
-            return str(student_row_adj["Risk_Level"].iloc[0])
-        return "Medium"
-
-    feature_cols = ['studyhours', 'attendance', 'resources', 'extracurricular', 'motivation', 'internet', 'gender', 'age', 'learningstyle', 'onlinecourses', 'discussions', 'assignmentcompletion', 'examscore', 'edutech', 'stresslevel', 'finalgrade', 'attendance_course', 'grade', 'credits', 'engagement_score', 'risk_level_enc']
-    cols = [c for c in feature_cols if c in student_row_adj.columns]
-    if not cols:
-        return "Medium"
-
-    X = student_row_adj[cols].astype(float).values.reshape(1, -1)
-    pred = risk_model.predict(X)[0]
-    return str(pred)
+    return positive, improvement_msg, tip, summary
 
 
 # -----------------------------------------------------------
-# HOME PAGE
+# HOME / LANDING PAGE
 # -----------------------------------------------------------
 def show_home():
     st.title("Silverleaf University – Student Success Dashboard")
-    st.write(
-        "Welcome! This tool helps you track your progress, understand your study habits, "
-        "and get friendly AI-based suggestions to stay on track."
-    )
 
-    st.markdown("### Step 1: Find your name")
-    name_to_id = dict(zip(profile_df["Name"], profile_df["Student_ID"]))
+    st.write("""
+    Welcome to the **Student Success Dashboard**!  
+    This tool is designed to help you understand how you're performing academically, how your study habits are shaping your results, and what steps you can take to stay on track throughout the semester.
+
+    ### 📌 What this dashboard does
+    - Helps you **track your course performance** using your most recent grades  
+    - Lets you **review your study habits**, attendance, and overall motivation  
+    - Gives you **AI-generated insights** based on your data  
+    - Provides an easy way to understand where you’re doing well and where you might need support  
+
+    ### 🧭 How to get started
+    1. **Find your name** using the search box.  
+       Once selected, your program, year, and semester will automatically load based on our records.
+    2. **Review your details**  
+       Program is fixed based on your academic path, but you can adjust semester and year if you want to view previous information.
+    3. **Enter your latest course grades**  
+       Your courses will appear based on your program. Just enter your most recent grades for each course.
+    4. **Complete the quick study survey**  
+       Tell us about your weekly study hours, attendance for this semester, and your motivation level.
+    5. When you're ready, click **Go to Dashboard**.  
+       We'll generate your personalized dashboard with performance charts, study insights, and academic engagement metrics.
+
+    ### 🎯 Why this helps
+    This dashboard brings all your key information into one place so you can:
+    - Understand how your habits influence your grades  
+    - Compare your performance trends with expected progress  
+    - Get personalized suggestions powered by our AI model  
+    - Take early action before falling behind  
+
+    You're just a few steps away from seeing your academic journey more clearly—let’s begin!
+    """)
+
+    # -----------------------------
+    # STEP 1 – SELECT NAME
+    # -----------------------------
+    st.subheader("Step 1: Find your name")
+
     selected_name = st.selectbox(
         "Search or select your name:",
-        sorted(name_to_id.keys())
+        options=sorted(profile_df["Name"].unique()),
     )
-    student_id = name_to_id[selected_name]
 
-    # Pull defaults from profile
-    stu_row = profile_df[profile_df["Student_ID"] == student_id].iloc[0]
-    default_program = stu_row["Program"]
-    default_year = stu_row["Year"]
+    # Fetch the student's record
+    prof_row = profile_df[profile_df["Name"] == selected_name].iloc[0]
+    student_id = prof_row["Student_ID"]
+    default_program = prof_row["Program"]
+    default_year = prof_row["Year"]
 
-    st.markdown("### Step 2: Confirm your program details")
-    col1, col2, col3 = st.columns(3)
-    with col1:
-        semester = st.selectbox(
-            "Semester",
-            sorted(insights_df["Semester"].dropna().unique())
-        )
-    with col2:
-        program = st.selectbox(
-            "Program",
-            sorted(profile_df["Program"].unique()),
-            index=list(sorted(profile_df["Program"].unique())).index(default_program)
-        )
-    with col3:
-        year = st.selectbox(
-            "Year",
-            sorted(profile_df["Year"].unique()),
-            index=list(sorted(profile_df["Year"].unique())).index(default_year)
+    # Semester from insights (latest if multiple), otherwise Fall 2024
+    user_insights = insights_df[insights_df["Student_ID"] == str(student_id)]
+    if not user_insights.empty:
+        default_semester = user_insights.iloc[0]["Semester"]
+    else:
+        default_semester = "Fall 2024"
+
+    # Store core identity in session
+    st.session_state["student_name"] = selected_name
+    st.session_state["student_id"] = str(student_id)
+    st.session_state["program"] = default_program
+
+    # -----------------------------
+    # STEP 2 – PROGRAM DETAILS
+    # -----------------------------
+    st.subheader("Step 2: Confirm your program details")
+
+    col_sem, col_prog, col_year = st.columns([2, 3, 1.5])
+
+    with col_sem:
+        st.caption("Semester")
+        semester_input = st.selectbox(
+            "",
+            options=["Fall 2023", "Spring 2024", "Fall 2024", "Spring 2025"],
+            index=["Fall 2023", "Spring 2024", "Fall 2024", "Spring 2025"].index(
+                default_semester
+            )
+            if default_semester in ["Fall 2023", "Spring 2024", "Fall 2024", "Spring 2025"]
+            else 2,
+            key="home_semester",
         )
 
-    st.markdown("### Step 3: Enter your latest course grades")
-    courses = get_courses_for_program(program)
-    latest_grades = {}
-    for c in courses:
-        latest_grades[c] = st.number_input(
-            f"{c} grade (0–100)",
+    with col_prog:
+        st.caption("Program (fixed from records)")
+        st.selectbox(
+            "",
+            options=[default_program],
+            disabled=True,
+            key="home_program",
+        )
+
+    with col_year:
+        st.caption("Year")
+        year_input = st.selectbox(
+            "",
+            options=["1st", "2nd", "3rd", "4th"],
+            index=["1st", "2nd", "3rd", "4th"].index(default_year),
+            key="home_year",
+        )
+
+    # Save year/semester to session
+    st.session_state["year"] = year_input
+    st.session_state["semester"] = semester_input
+
+    # -----------------------------
+    # STEP 3 – COURSE GRADES
+    # -----------------------------
+    st.subheader("Step 3: Enter your latest course grades")
+
+    program_courses = PROGRAM_COURSE_MAP.get(default_program, [])
+    course_grades = {}
+
+    for course in program_courses:
+        course_grades[course] = st.slider(
+            f"{course} grade (0–100)",
             min_value=0,
             max_value=100,
             value=80,
-            step=1
         )
 
-    st.markdown("### Step 4: Quick study survey")
-    survey_col1, survey_col2, survey_col3 = st.columns(3)
-    with survey_col1:
-        study_hours = st.slider("Study hours per week", 0, 60, 10)
-    with survey_col2:
-        attendance = st.slider("Attendance this semester (%)", 0, 100, 80)
-    with survey_col3:
-        motivation = st.slider("Motivation level (0–10)", 0, 10, 6)
+    st.session_state["course_grades"] = course_grades
+
+    # -----------------------------
+    # STEP 4 – STUDY SURVEY
+    # -----------------------------
+    st.subheader("Step 4: Quick study survey")
+
+    col_hours, col_att, col_mot = st.columns(3)
+
+    with col_hours:
+        study_hours = st.slider(
+            "Study hours per week",
+            0,
+            60,
+            st.session_state.get("study_hours", 10),
+        )
+
+    with col_att:
+        attendance = st.slider(
+            "Attendance this semester (%)",
+            0,
+            100,
+            st.session_state.get("attendance", 80),
+        )
+
+    with col_mot:
+        motivation = st.slider(
+            "Motivation level (0–10)",
+            0,
+            10,
+            st.session_state.get("motivation", 6),
+        )
+
+    st.session_state["study_hours"] = study_hours
+    st.session_state["attendance"] = attendance
+    st.session_state["motivation"] = motivation
 
     st.markdown("---")
+
     if st.button("Go to Dashboard", use_container_width=True):
         st.session_state["page"] = "dashboard"
-        st.session_state["selected_student_id"] = student_id
-        st.session_state["selected_student_name"] = selected_name
-        st.session_state["selected_program"] = program
-        st.session_state["selected_year"] = year
-        st.session_state["selected_semester"] = semester
-        st.session_state["latest_grades"] = latest_grades
-        st.session_state["survey_study_hours"] = study_hours
-        st.session_state["survey_attendance"] = attendance
-        st.session_state["survey_motivation"] = motivation
         st.rerun()
 
 
@@ -441,164 +656,149 @@ def show_home():
 # DASHBOARD PAGE
 # -----------------------------------------------------------
 def show_dashboard():
-    # safety: if someone lands here without state, send them home
-    if st.session_state["selected_student_id"] is None:
+    # Guard: if no student selected, go back home
+    if not st.session_state.get("student_id"):
         st.session_state["page"] = "home"
         st.rerun()
 
-    selected_student_id = st.session_state["selected_student_id"]
-    selected_name = st.session_state["selected_student_name"]
-    selected_semester = st.session_state["selected_semester"]
-    latest_grades = st.session_state["latest_grades"]
+    student_id = st.session_state["student_id"]
+    student_name = st.session_state["student_name"]
+    semester_state = st.session_state["semester"]
+    program_state = st.session_state["program"]
+    year_state = st.session_state["year"]
+    latest_grades = st.session_state.get("course_grades", {})
+
+    # NEW FIX — add this:
+    study_hours = st.session_state["study_hours"]
+    attendance = st.session_state["attendance"]
+    motivation = st.session_state["motivation"]
 
     # HEADER
-    top_left, top_right = st.columns([4, 2])
+    top_left, top_right = st.columns([3.5, 2.0])
     with top_left:
         st.subheader("Student Success Dashboard – Silverleaf University")
         st.caption("Track your progress. Discover insights. Improve outcomes.")
 
     with top_right:
-        st.write(f"**Logged in as:** {selected_name}")
+        st.write(f"**Logged in as:** {student_name}")
         if st.button("🔙 Back to Home", use_container_width=True):
             st.session_state["page"] = "home"
             st.rerun()
 
-    # LAYOUT
-    filters_col, main_col, right_col = st.columns([1.0, 3.0, 1.5])
+    st.markdown("---")
 
-    # ---------------------- FILTERS -------------------------
+    # LAYOUT: Filters / Main / Right
+    filters_col, main_col, right_col = st.columns([1.0, 2.5, 1.5])
+
+    # -----------------------------
+    # FILTERS (LEFT COLUMN)
+    # -----------------------------
     with filters_col:
         st.markdown("### Filters")
 
-        # -----------------------------
-        # SEMESTER (synced with session)
-        # -----------------------------
-        semesters = sorted(insights_df["Semester"].dropna().unique())
+        # --- Semester (editable) ---
+        semesters = ["Fall 2023", "Spring 2024", "Fall 2024", "Spring 2025"]
         semester = st.selectbox(
             "Semester",
             options=semesters,
-            index=semesters.index(st.session_state["selected_semester"])
+            index=semesters.index(st.session_state["semester"])
         )
 
-        # -----------------------------
-        # PROGRAM (synced with session)
-        # -----------------------------
-        programs = ["All Programs"] + sorted(profile_df["Program"].unique())
-        program = st.selectbox(
+        st.session_state["semester"] = semester
+
+        # --- Program (FROZEN) ---
+        st.selectbox(
             "Program",
-            options=programs,
-            index=programs.index(st.session_state["selected_program"])
-            if st.session_state["selected_program"] in programs else 0
+            options=[st.session_state["program"]],
+            disabled=True
         )
 
-        # -----------------------------
-        # YEAR (synced with session)
-        # -----------------------------
-        years = sorted(profile_df["Year"].unique())
+        # --- Year (editable) ---
+        years = ["1st", "2nd", "3rd", "4th"]
         year = st.selectbox(
             "Year",
             options=years,
-            index=years.index(st.session_state["selected_year"])
+            index=years.index(st.session_state["year"])
         )
+        st.session_state["year"] = year
 
-        # -----------------------------
-        # COURSE FILTER
-        # -----------------------------
-        courses_all = ["All Courses"] + sorted(enroll_df["Course_Name"].unique())
-        course_filter = st.selectbox("Course", options=courses_all)
+        # --- Course Filter ---
+        courses_all = ["All Courses"] + PROGRAM_COURSE_MAP[st.session_state["program"]]
+        course_filter = st.selectbox("Course:", options=courses_all)
 
-        # -----------------------------
-        # RISK LEVEL FILTER (KEEP ORIGINAL)
-        # -----------------------------
-        risk_opts = ["All Levels", "Low", "Medium", "High"]
-        risk_filter = st.selectbox("Risk Level", options=risk_opts)
+        # --- Remove Risk Level + Attendance Range (NO LONGER NEEDED) ---
 
-        # -----------------------------
-        # ATTENDANCE RANGE FILTER
-        # -----------------------------
-        att_min, att_max = st.slider(
-            "Attendance Range (%)",
-            0, 100,
-            (0, 100)
-        )
+        st.markdown("### Adjust Inputs")
 
-        # -----------------------------
-        # STUDY HOURS (sync with survey)
-        # -----------------------------
-        st.session_state["survey_study_hours"] = st.slider(
+        # Study hours (dashboard + home synced)
+        new_study = st.slider(
             "Study Hours / Week",
             0, 60,
-            value=st.session_state["survey_study_hours"]
+            value=st.session_state["study_hours"]
         )
+        st.session_state["study_hours"] = new_study
 
-        # -----------------------------
-        # ATTENDANCE override (sync)
-        # -----------------------------
-        st.session_state["survey_attendance"] = st.slider(
-            "Override Attendance (%)",
+        # Attendance sync
+        new_attendance = st.slider(
+            "Attendance (%)",
             0, 100,
-            value=st.session_state["survey_attendance"]
+            value=st.session_state["attendance"]
         )
+        st.session_state["attendance"] = new_attendance
 
-        # -----------------------------
-        # MOTIVATION override (sync)
-        # -----------------------------
-        st.session_state["survey_motivation"] = st.slider(
+        # Motivation sync
+        new_motivation = st.slider(
             "Motivation (0–10)",
             0, 10,
-            value=st.session_state["survey_motivation"]
+            value=st.session_state["motivation"]
         )
+        st.session_state["motivation"] = new_motivation
 
-    # =============================
-    # BUILD COHORT USING FILTERS
-    # =============================
+    # -----------------------------
+    # BUILD COHORT BASED ON FILTERS
+    # -----------------------------
     cohort = master_df.copy()
 
-    # Filter semester
+    # Filter by current semester
     cohort = cohort[cohort["Semester"] == semester]
 
-    # Filter program
-    if program != "All Programs":
-        cohort = cohort[cohort["Program"] == program]
+    # Filter by student's program (always frozen)
+    cohort = cohort[cohort["Program"] == program_state]
 
-    # Filter course selection
+    # Filter by year
+    cohort = cohort[cohort["Year"] == year_state]
+
+    # If selecting a specific course, pick students enrolled in that course
     if course_filter != "All Courses":
-        stu_course_ids = enroll_df[enroll_df["Course_Name"] == course_filter]["Student_ID"].unique()
-        cohort = cohort[cohort["Student_ID"].isin(stu_course_ids)]
+        stu_ids_for_course = enroll_df[enroll_df["Course_Name"] == course_filter]["Student_ID"].unique()
+        cohort = cohort[cohort["Student_ID"].isin(stu_ids_for_course)]
 
-    # Filter attendance range
-    if "Attendance" in cohort.columns:
-        cohort = cohort[(cohort["Attendance"] >= att_min) & (cohort["Attendance"] <= att_max)]
+    # Ensure we do not break visuals
+    if cohort.empty:
+        cohort = master_df.copy()
 
-    # Filter risk level
-    if risk_filter != "All Levels":
-        cohort = cohort[cohort["Risk_Level"] == risk_filter]
-
-    # =======================================
-    # BUILD STUDENT ROW (BASE + ADJUSTMENTS)
-    # =======================================
-    student_row = master_df[master_df["Student_ID"] == selected_student_id]
+    # -----------------------------
+    # BUILD STUDENT ROW (ADJUSTED)
+    # -----------------------------
+    student_row = master_df[master_df["Student_ID"] == str(student_id)]
     if student_row.empty:
-        # fallback to cohort
-        student_row = cohort[cohort["Student_ID"] == selected_student_id]
+        student_row = cohort[cohort["Student_ID"] == str(student_id)]
 
     student_row_adj = student_row.copy()
-
     if not student_row_adj.empty:
         idx = student_row_adj.index[0]
+        student_row_adj.loc[idx, "StudyHours"] = study_hours
+        student_row_adj.loc[idx, "Attendance"] = attendance
+        student_row_adj.loc[idx, "Motivation"] = motivation
 
-        # override with SURVEY values (from home page OR dashboard)
-        student_row_adj.loc[idx, "StudyHours"] = st.session_state["survey_study_hours"]
-        student_row_adj.loc[idx, "Attendance"] = st.session_state["survey_attendance"]
-        student_row_adj.loc[idx, "Motivation"] = st.session_state["survey_motivation"]
-
-        # override exam score if latest course grades submitted
         if latest_grades:
-            avg_new_exam = np.mean(list(latest_grades.values()))
+            avg_new_exam = float(np.mean(list(latest_grades.values())))
             student_row_adj.loc[idx, "ExamScore"] = avg_new_exam
+            student_row_adj.loc[idx, "FinalGrade"] = avg_new_exam
 
-
-    # ---------------------- KPI ROW -------------------------
+    # -----------------------------
+    # KPI ROW (MAIN COLUMN TOP)
+    # -----------------------------
     with main_col:
         k1, k2, k3, k4 = st.columns(4)
         k_att, k_exam, k_hours, k_mot = compute_kpis(student_row_adj)
@@ -606,190 +806,225 @@ def show_dashboard():
         with k1:
             st.markdown(
                 f"""
-                <div class="metric-card" style="background-color:#ff5f6d;">
+                <div class="metric-card" style="background: linear-gradient(135deg,#fb7185,#f97316);">
                     <div class="metric-label">Attendance</div>
-                    <div class="metric-value">{k_att}%</div>
+                    <div class="metric-value">{k_att:.1f}%</div>
                 </div>
-                """, unsafe_allow_html=True
+                """,
+                unsafe_allow_html=True,
             )
         with k2:
             st.markdown(
                 f"""
-                <div class="metric-card" style="background-color:#00BCD4;">
+                <div class="metric-card" style="background: linear-gradient(135deg,#22c55e,#16a34a);">
                     <div class="metric-label">Avg Exam Score</div>
-                    <div class="metric-value">{k_exam}</div>
+                    <div class="metric-value">{k_exam:.1f}</div>
                 </div>
-                """, unsafe_allow_html=True
+                """,
+                unsafe_allow_html=True,
             )
         with k3:
             st.markdown(
                 f"""
-                <div class="metric-card" style="background-color:#ff9800;">
+                <div class="metric-card" style="background: linear-gradient(135deg,#f59e0b,#eab308);">
                     <div class="metric-label">Study Hours / Week</div>
-                    <div class="metric-value">{k_hours}</div>
+                    <div class="metric-value">{k_hours:.1f}</div>
                 </div>
-                """, unsafe_allow_html=True
+                """,
+                unsafe_allow_html=True,
             )
         with k4:
             st.markdown(
                 f"""
-                <div class="metric-card" style="background-color:#3f51b5;">
+                <div class="metric-card" style="background: linear-gradient(135deg,#3b82f6,#1d4ed8);">
                     <div class="metric-label">Motivation (0–10)</div>
-                    <div class="metric-value">{k_mot}</div>
+                    <div class="metric-value">{k_mot:.1f}</div>
                 </div>
-                """, unsafe_allow_html=True
+                """,
+                unsafe_allow_html=True,
             )
 
-    # ---------------------- MAIN VISUALS --------------------
+    # -----------------------------
+    # MAIN VISUALS (COURSE, TREND, RESOURCES, ENGAGEMENT)
+    # -----------------------------
     with main_col:
+        
         # COURSE PERFORMANCE OVERVIEW
-        st.markdown("#### Course Performance Overview")
+        hist = enroll_df[enroll_df["Student_ID"] == student_id][["Course_Name", "Grade"]]
+        hist = hist.groupby("Course_Name", as_index=False)["Grade"].mean()
+        hist.rename(columns={"Grade": "Previous_Grade"}, inplace=True)
 
-        # historical grades for this student
-        hist = enroll_df[enroll_df["Student_ID"] == selected_student_id][["Course_Name", "Grade"]]
-        hist = hist.groupby("Course_Name", as_index=False)["Grade"].mean().rename(
-            columns={"Grade": "Previous_Grade"}
-        )
-
-        # latest grades from survey
-        latest_list = []
-        for c, g in latest_grades.items():
-            latest_list.append({"Course_Name": c, "Current_Grade": g})
+        latest_list = [{"Course_Name": c, "Current_Grade": g}
+                       for c, g in latest_grades.items()]
         latest_df = pd.DataFrame(latest_list)
 
-        course_perf = pd.merge(hist, latest_df, on="Course_Name", how="outer")
+        if hist.empty and latest_df.empty:
+            course_perf = pd.DataFrame(columns=["Course_Name", "Previous_Grade", "Current_Grade"])
+        else:
+            course_perf = pd.merge(hist, latest_df, on="Course_Name", how="outer")
+
+        st.markdown("#### Course Performance Overview")
+
+        # Apply course filter
+        if course_filter != "All Courses":
+            course_perf = course_perf[course_perf["Course_Name"] == course_filter]
 
         if not course_perf.empty:
-            # fill NaNs for plotting
-            course_perf["Current_Grade"] = course_perf["Current_Grade"].fillna(0)
-
+            course_perf.fillna(0, inplace=True)
             fig_course = px.bar(
                 course_perf,
                 x="Course_Name",
                 y=["Previous_Grade", "Current_Grade"],
-                barmode="group"
+                barmode="group",
             )
             fig_course.update_layout(
                 showlegend=False,
                 height=260,
-                margin=dict(l=10, r=10, t=30, b=10)
+                margin=dict(l=10, r=10, t=30, b=10),
+                yaxis_title="Grade"
             )
             st.plotly_chart(fig_course, use_container_width=True)
         else:
-            st.info("No course data available for this student.")
+            st.info("No course information available.")
 
-        # WEEKLY STUDY HOURS & PERFORMANCE
+        # WEEKLY STUDY HOURS TREND
         st.markdown("#### Weekly Study Hours & Performance Correlation")
-        weekly_df = get_weekly_trend_clean(
-            student_row_adj,
-            cohort if not cohort.empty else master_df,
-            override_hours=st.session_state["survey_study_hours"]
-        )
+
+        weekly_df = build_weekly_hours_trend(student_row_adj, cohort, study_hours)
 
         if not weekly_df.empty:
             fig_week = px.line(
                 weekly_df,
                 x="Week",
-                y=["Student Exam Score", "Cohort Exam Score"],
-                markers=True
+                y=["Student Study Hours", "Cohort Study Hours"],
+                markers=True,
             )
             fig_week.update_layout(
-                height=250,
+                height=260,
                 margin=dict(l=20, r=20, t=30, b=10),
-                showlegend=True
+                yaxis_title="Study Hours",
             )
-
             st.plotly_chart(fig_week, use_container_width=True)
-
         else:
-            st.info("Not enough data to build a weekly trend.")
+            st.info("Not enough information to show a weekly trend.")
 
         # STUDY RESOURCES + ENGAGEMENT
         col_res, col_eng = st.columns(2)
 
         with col_res:
             st.markdown("#### Study Resources Distribution")
-            res_df = get_resource_distribution(student_row_adj)
+            res_df = build_resource_distribution(student_row_adj, study_hours)
             if not res_df.empty:
                 fig_res = px.pie(
                     res_df,
                     names="Resource",
                     values="Hours",
-                    hole=0.5,
+                    hole=0.55,
                 )
                 fig_res.update_layout(
                     height=260,
-                    margin=dict(l=10, r=10, t=30, b=10)
+                    margin=dict(l=10, r=10, t=30, b=10),
                 )
                 st.plotly_chart(fig_res, use_container_width=True)
             else:
-                st.info("No resource data available.")
+                st.info("No resource usage information available.")
 
         with col_eng:
             st.markdown("#### Academic Engagement Metrics")
 
-            eng = get_engagement_metrics(perf_df, selected_student_id)
+            eng = build_engagement_metrics(str(student_id))
 
-            for label, val in [
-                ("AI Tutor Sessions", eng["AI_Tutor_Sessions"]),
-                ("Study Group Sessions", eng["Study_Group_Sessions"]),
-                ("Dashboard Logins", eng["Dashboard_Logins"]),
-                ("Resource Downloads", eng["Resource_Downloads"]),
-                ("Assignment Completion", f"{eng['Assignment_Completion']}%"),
-                ("Stress Level", eng["Stress_Level_Label"]),
-                ("Forum Participation", f"{eng['Forum_Posts']} posts"),
-                ("Overall Progress", eng["Overall_Status"]),
-            ]:
+                        # Render each metric in a clean professional row
+            for label in eng:
                 st.markdown(
                     f"""
                     <div style="
                         display:flex;
                         justify-content:space-between;
-                        padding:6px 0;
+                        padding:10px 0;
                         border-bottom:1px solid #eee;
                         font-size:15px;
-                        color:#1a1a1a;">
-                        <span style="font-weight:600;">{label}</span>
-                        <span style="font-weight:600; color:#1b4ed8;">{val}</span>
+                    ">
+                        <span style="font-weight:600; color:#222;">{label}</span>
+                        <span style="font-weight:600; color:#1b4ed8;">{eng[label]}</span>
                     </div>
                     """,
                     unsafe_allow_html=True
-                )        
+                )
 
-    # ---------------------- RIGHT COLUMN: ANALYZE -----------
+    # -----------------------------
+    # RIGHT COLUMN – AI INSIGHTS
+    # -----------------------------
     with right_col:
         st.markdown(
             """
             <div class="analyze-card">
-                <div style="font-weight:600; font-size:13px; margin-bottom:8px;">
+                <div style="font-weight:600; font-size:13px; margin-bottom:6px;">
                     Analyze My Performance
                 </div>
-                <div style="font-size:11px; margin-bottom:10px;">
+                <div style="font-size:11px; line-height:1.5;">
                     Click the button below to generate personalized academic insights
-                    based on your latest grades and survey responses.
+                    based on your latest grades and survey responses. All insights are
+                    generated locally from your data.
                 </div>
             </div>
             """,
             unsafe_allow_html=True,
         )
 
-        clicked = st.button("🔍 Analyze My Performance", use_container_width=True)
+        st.markdown("<div style='height:20px'></div>", unsafe_allow_html=True)
+        analyze_clicked = st.button("🔍 Analyze My Performance", use_container_width=True)
 
         st.markdown("<br/>", unsafe_allow_html=True)
-        st.markdown('<div class="panel-header">🎓 AI-Generated Academic Insights</div>',
-                    unsafe_allow_html=True)
+        st.markdown("""
+            <div style="
+                font-size:18px;
+                font-weight:700;
+                margin-top:25px;
+                margin-bottom:10px;
+                color:#1a237e;
+            ">
+                🎓 AI-Generated Academic Insights
+            </div>
+        """, unsafe_allow_html=True)
 
-        if not clicked:
-            st.info("No analysis yet. Click **Analyze My Performance** to view your insights.")
+        if not analyze_clicked:
+            st.info(
+                "No analysis yet. Click **Analyze My Performance** to see your personalized insights."
+            )
         else:
             risk_level = predict_risk(student_row_adj)
             pos_msg, improv_msg, tip_msg, summary_msg = local_ai_agent(
                 student_row_adj, risk_level
             )
 
+            # Color card for risk level
+            if risk_level == "High":
+                status_color = "yellow"
+                status_text = "You may be at higher risk this term. Please review the suggestions carefully."
+            elif risk_level == "Medium":
+                status_color = "blue"
+                status_text = "You are in the middle range. With a few adjustments, you can move to a safer zone."
+            elif risk_level == "Low":
+                status_color = "green"
+                status_text = "You appear to be on track. Keep up your current momentum."
+            else:
+                status_color = "gray"
+                status_text = "Risk level is unknown. Some data may be missing."
+
             st.markdown(
                 f"""
-                <div class="insight-card">
+                <div class="insight-card {status_color}">
+                    <div class="insight-title">📌 Risk Overview – {risk_level}</div>
+                    <div class="insight-body">{status_text}</div>
+                </div>
+                """,
+                unsafe_allow_html=True,
+            )
+
+            st.markdown(
+                f"""
+                <div class="insight-card green">
                     <div class="insight-title">✅ Positive Reinforcement</div>
                     <div class="insight-body">{pos_msg}</div>
                 </div>
@@ -816,7 +1051,7 @@ def show_dashboard():
             )
             st.markdown(
                 f"""
-                <div class="insight-card">
+                <div class="insight-card gray">
                     <div class="insight-title">📊 Overall Summary</div>
                     <div class="insight-body">{summary_msg}</div>
                 </div>
@@ -824,6 +1059,7 @@ def show_dashboard():
                 unsafe_allow_html=True,
             )
 
+    # FOOTER
     st.markdown(
         """
         <div class="footer-container">
@@ -831,12 +1067,13 @@ def show_dashboard():
                 This dashboard is a tool for student academic success insights.
             </div>
             <div class="footer-copy">
-                © 2025 Silverleaf University · All Rights Reserved · Student Success Dashboard Prototype
+                © 2025 Silverleaf University · All Rights Reserved · Student Success Dashboard
             </div>
         </div>
         """,
-        unsafe_allow_html=True
+        unsafe_allow_html=True,
     )
+
 
 # -----------------------------------------------------------
 # ROUTER
@@ -844,5 +1081,4 @@ def show_dashboard():
 if st.session_state["page"] == "home":
     show_home()
 else:
-
     show_dashboard()
