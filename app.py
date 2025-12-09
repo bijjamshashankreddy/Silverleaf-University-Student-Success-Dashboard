@@ -226,7 +226,7 @@ def load_data():
 profile_df, perf_df, enroll_df, engage_df, insights_df, master_df = load_data()
 
 # Try to load trained risk model (optional)
-model_path = Path("risk_model.pkl")
+model_path = Path("student_success_model.pkl")
 risk_model = joblib.load(model_path) if model_path.exists() else None
 
 # -----------------------------------------------------------
@@ -1082,3 +1082,4 @@ if st.session_state["page"] == "home":
     show_home()
 else:
     show_dashboard()
+
